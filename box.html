@@ -339,13 +339,18 @@ function drawPage() {
         const rows = Math.min(40, Math.max(5, (m.text || '').split('\n').length + 1));
         html += `<div class="msg ${m.role}">${who}<textarea class="edit" data-i="${i}" rows="${rows}">${esc(m.text || '')}</textarea></div>`;
       } else {
-        html += `<div class="msg ${m.role}">${who}<div class="body plain">${esc(m.text || '')}</div>${widgetHtml(m.widget)}</div>`;
+        const raw = m.role === 'char' ? (m.html || m.text || '') : (m.text || '');
+        const looksHtml = /<\/?[a-z][\s\S]*>/i.test(raw) && !m.useText;
+        const body = looksHtml
+          ? `<div class="body rich">${sanitize(raw)}</div>`
+          : `<div class="body plain">${esc(m.text || '')}</div>`;
+        html += `<div class="msg ${m.role}">${who}${body}${widgetHtml(m.widget)}</div>`;
       }
     });
     page.innerHTML = html;
   } else {
     if (editMode) page.innerHTML = `<textarea class="edit" id="lines-edit" rows="34">${esc((current.lines || []).join('\n'))}</textarea>`;
-    else page.innerHTML = `<div class="msg char"><div class="body plain" style="font-family:var(--serif);font-size:16px">${esc((current.lines || []).join('\n'))}</div></div>`;
+    else { const joined = (current.lines || []).join('\n'); const looksHtml = /<\/?[a-z][\s\S]*>/i.test(joined); page.innerHTML = `<div class="msg char"><div class="${looksHtml ? 'body rich' : 'body plain'}" style="font-family:var(--serif);font-size:16px">${looksHtml ? sanitize(joined) : esc(joined)}</div></div>`; }
   }
 }
 async function toggleEdit() {
