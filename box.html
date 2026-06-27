@@ -88,6 +88,18 @@
   .msg textarea.edit { width: 100%; font: inherit; font-size: 14.5px; line-height: 1.7; border: 1px solid var(--plum); border-radius: 8px; padding: 10px 12px; background: #fff; color: var(--ink); resize: vertical; }
   hr.turnrule { border: none; border-top: 1px solid var(--line); margin: 26px 0; }
 
+  /* ── 위젯(이름:값) ── */
+  details.widget { border: 1px solid var(--line); border-radius: 10px; padding: 2px 14px; margin: 12px 0 0; background: rgba(244,241,236,.6); }
+  details.widget > summary { cursor: pointer; color: var(--plum); font-family: var(--sans); font-size: 12.5px; letter-spacing: .04em; padding: 9px 0; list-style: none; }
+  details.widget > summary::-webkit-details-marker { display: none; }
+  details.widget > summary::before { content: '⚘ '; color: var(--gold); }
+  .wsec { margin: 4px 0 12px; }
+  .wtitle { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mauve); margin: 8px 0 6px; }
+  .wrow { display: grid; grid-template-columns: 116px 1fr; gap: 12px; padding: 5px 0; border-top: 1px solid rgba(216,208,201,.6); font-size: 13.5px; }
+  .wrow:first-of-type { border-top: none; }
+  .wk { color: var(--plum-d); font-family: var(--sans); font-weight: 600; word-break: break-all; }
+  .wv { font-family: var(--sans); color: #5f5358; white-space: pre-wrap; word-break: break-word; }
+
   .rich :is(p, div) { margin: 0 0 .85em; }
   .rich strong { font-weight: 700; }
   .rich details { border: 1px solid var(--line); border-radius: 10px; padding: 2px 14px; margin: 14px 0; background: rgba(244,241,236,.65); }
@@ -216,23 +228,14 @@ const esc = (s) => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;'
 const fmtDate = (iso) => { try { return new Date(iso).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return ''; } };
 const clean = (o) => JSON.parse(JSON.stringify(o)); // undefined 제거 (RTDB용)
 
-/* ── 대사 줄바꿈: **..** 와 "..." 는 줄 분리 · *"..."*(별표 안 따옴표)는 무시 ── */
+/* ── 출력 내용 그대로: 원래 줄바꿈만 보존(별표·따옴표 가공 없음) ── */
 function formatDialogue(text) {
   if (!text) return '';
-  const out = []; let buf = '', i = 0; const n = text.length;
-  const flush = () => { if (buf) { out.push(buf); buf = ''; } };
-  while (i < n) {
-    if (text[i] === '*' && text[i + 1] === '*') { const e = text.indexOf('**', i + 2); if (e !== -1) { flush(); out.push('\n' + text.slice(i, e + 2) + '\n'); i = e + 2; continue; } }
-    if (text[i] === '*') { const e = text.indexOf('*', i + 1); if (e !== -1) { buf += text.slice(i, e + 1); i = e + 1; continue; } }
-    if (text[i] === '"' || text[i] === '\u201C') { const close = text[i] === '\u201C' ? '\u201D' : '"'; const e = text.indexOf(close, i + 1); if (e !== -1) { flush(); out.push('\n' + text.slice(i, e + 1) + '\n'); i = e + 1; continue; } }
-    buf += text[i]; i++;
-  }
-  flush();
-  return out.join('').replace(/[ \t]+\n/g, '\n').replace(/\n{4,}/g, '\n\n\n').trim();
+  return String(text).replace(/\r\n/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
-// 표시용 HTML: 대사 줄바꿈 + **굵게** + 줄바꿈→<br> (이미 이스케이프된 텍스트에 적용)
+// 표시용 HTML: 줄바꿈만 <br>로 (이미 이스케이프된 텍스트에 적용)
 function fmtTextPart(s) {
-  return formatDialogue(s).replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+  return formatDialogue(s).replace(/\n/g, '<br>');
 }
 function sanitize(raw) {
   return String(raw || '')
@@ -242,6 +245,17 @@ function sanitize(raw) {
 // 캐릭터 답변(HTML): 태그는 보존, 태그 바깥 텍스트에만 대사 서식 적용
 function richFormat(rawHtml) {
   return sanitize(rawHtml).split(/(<[^>]+>)/).map((part, idx) => idx % 2 === 1 ? part : fmtTextPart(part)).join('');
+}
+// 위젯(이름:값) 접이식 렌더
+function widgetHtml(w) {
+  if (!w) return '';
+  const sec = (title, arr) => {
+    if (!arr || !arr.length) return '';
+    const rows = arr.map(([n, v]) => `<div class="wrow"><span class="wk">${esc(n)}</span><span class="wv">${esc(v).replace(/\n/g, '<br>')}</span></div>`).join('');
+    return `<div class="wsec"><div class="wtitle">${esc(title)}</div>${rows}</div>`;
+  };
+  const inner = sec('크리에이터 위젯', w.creator) + sec('유저 위젯', w.player);
+  return inner ? `<details class="widget"><summary>위젯 상태</summary>${inner}</details>` : '';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -329,7 +343,7 @@ function drawPage() {
         let body;
         if (m.role === 'char' && m.html && !m.useText) body = `<div class="body rich">${richFormat(m.html)}</div>`;
         else body = `<div class="body">${fmtTextPart(esc(m.text || ''))}</div>`;
-        html += `<div class="msg ${m.role}">${who}${body}</div>`;
+        html += `<div class="msg ${m.role}">${who}${body}${widgetHtml(m.widget)}</div>`;
       }
     });
     page.innerHTML = html;
@@ -365,7 +379,7 @@ function dl(text, name, type) { const url = URL.createObjectURL(new Blob([text],
 function toTxt(e) {
   if (e.messages && e.messages.length) {
     const L = [`❀ ${e.title}`, `백업 ${fmtDate(e.originalSavedAt || e.importedAt)} · 총 ${units(e).n}턴`, '━'.repeat(48)]; let lt = 0;
-    for (const m of e.messages) { if (m.turn && m.turn !== lt) { lt = m.turn; L.push('', '─'.repeat(48), `Turn ${m.turn}`, '─'.repeat(48)); } L.push('', `${m.role === 'char' ? '🤖' : '🗣'} [${m.name || (m.role === 'char' ? '캐릭터' : '유저')}]`, formatDialogue(m.text)); }
+    for (const m of e.messages) { if (m.turn && m.turn !== lt) { lt = m.turn; L.push('', '─'.repeat(48), `Turn ${m.turn}`, '─'.repeat(48)); } L.push('', `${m.role === 'char' ? '🤖' : '🗣'} [${m.name || (m.role === 'char' ? '캐릭터' : '유저')}]`, formatDialogue(m.text)); if (m.widget) { const wsec = (t, arr) => { if (!arr || !arr.length) return; L.push('', `〔${t}〕`); arr.forEach(([n, v]) => L.push(`${n} : ${v}`)); }; wsec('크리에이터 위젯', m.widget.creator); wsec('유저 위젯', m.widget.player); } }
     L.push('', '━'.repeat(48), '❀ 끝'); return L.join('\n');
   }
   return (e.lines || []).map(formatDialogue).join('\n');
