@@ -81,21 +81,20 @@
   .msg .who { font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 8px; }
   .msg.char .who { color: var(--plum); }
   .msg.user .who { color: var(--mauve); }
-  .msg.char .body { font-family: var(--serif); font-size: 17px; line-height: 1.92; }
+  .msg.char .body { font-family: var(--serif); font-size: 17px; line-height: 1.85; }
   .msg.user { border-left: 2px solid var(--line); padding-left: 16px; }
-  .msg.user .body { font-family: var(--sans); font-size: 14.5px; color: #5f5358; line-height: 1.8; }
+  .msg.user .body { font-family: var(--sans); font-size: 14.5px; color: #5f5358; line-height: 1.7; }
   .msg .body.plain { white-space: pre-wrap; word-break: break-word; }
-  .msg textarea.edit { width: 100%; font: inherit; font-size: 14.5px; line-height: 1.7; border: 1px solid var(--plum); border-radius: 8px; padding: 10px 12px; background: #fff; color: var(--ink); resize: vertical; }
+  .msg textarea.edit { width: 100%; min-height: 160px; font: inherit; font-size: 15px; line-height: 1.7; border: 1px solid var(--plum); border-radius: 8px; padding: 12px 14px; background: #fff; color: var(--ink); resize: vertical; }
   hr.turnrule { border: none; border-top: 1px solid var(--line); margin: 26px 0; }
 
-  /* ── 위젯(이름:값) ── */
-  details.widget { border: 1px solid var(--line); border-radius: 10px; padding: 2px 14px; margin: 12px 0 0; background: rgba(244,241,236,.6); }
-  details.widget > summary { cursor: pointer; color: var(--plum); font-family: var(--sans); font-size: 12.5px; letter-spacing: .04em; padding: 9px 0; list-style: none; }
-  details.widget > summary::-webkit-details-marker { display: none; }
-  details.widget > summary::before { content: '⚘ '; color: var(--gold); }
-  .wsec { margin: 4px 0 12px; }
-  .wtitle { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mauve); margin: 8px 0 6px; }
-  .wrow { display: grid; grid-template-columns: 116px 1fr; gap: 12px; padding: 5px 0; border-top: 1px solid rgba(216,208,201,.6); font-size: 13.5px; }
+  /* ── 위젯(이름:값) — 항상 보임 ── */
+  .widgetbox { border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 14px 0 0; background: rgba(244,241,236,.6); }
+  .wsec { margin: 2px 0 10px; }
+  .wsec:last-child { margin-bottom: 2px; }
+  .wtitle { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mauve); margin: 6px 0 7px; }
+  .wtitle::before { content: '⚘ '; color: var(--gold); }
+  .wrow { display: grid; grid-template-columns: 120px 1fr; gap: 12px; padding: 5px 0; border-top: 1px solid rgba(216,208,201,.6); font-size: 13.5px; }
   .wrow:first-of-type { border-top: none; }
   .wk { color: var(--plum-d); font-family: var(--sans); font-weight: 600; word-break: break-all; }
   .wv { font-family: var(--sans); color: #5f5358; white-space: pre-wrap; word-break: break-word; }
@@ -192,7 +191,6 @@
     <div class="rtools">
       <input class="tagin" id="tagin" placeholder="태그 추가 후 Enter" />
       <button class="btn small" id="editBtn">✎ 편집</button>
-      <button class="btn small" id="revealBtn">위젯 펼치기</button>
       <button class="btn small" id="expTxt">.txt로 저장</button>
       <button class="btn small" id="expJson">.json으로 저장</button>
       <button class="btn small danger" id="del">삭제</button>
@@ -246,16 +244,16 @@ function sanitize(raw) {
 function richFormat(rawHtml) {
   return sanitize(rawHtml).split(/(<[^>]+>)/).map((part, idx) => idx % 2 === 1 ? part : fmtTextPart(part)).join('');
 }
-// 위젯(이름:값) 접이식 렌더
+// 위젯(이름:값) — 항상 보이는 블록
 function widgetHtml(w) {
   if (!w) return '';
   const sec = (title, arr) => {
     if (!arr || !arr.length) return '';
-    const rows = arr.map(([n, v]) => `<div class="wrow"><span class="wk">${esc(n)}</span><span class="wv">${esc(v).replace(/\n/g, '<br>')}</span></div>`).join('');
+    const rows = arr.map(([n, v]) => `<div class="wrow"><span class="wk">${esc(n)}</span><span class="wv">${esc(v)}</span></div>`).join('');
     return `<div class="wsec"><div class="wtitle">${esc(title)}</div>${rows}</div>`;
   };
   const inner = sec('크리에이터 위젯', w.creator) + sec('유저 위젯', w.player);
-  return inner ? `<details class="widget"><summary>위젯 상태</summary>${inner}</details>` : '';
+  return inner ? `<div class="widgetbox">${inner}</div>` : '';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -294,7 +292,7 @@ async function ingestFile(file) {
   if (e) await Store.put(e);
 }
 function baseEntry(title, savedAt, url) { return { id: uid(), title: (title || '제목 없음').trim() || '제목 없음', importedAt: new Date().toISOString(), originalSavedAt: savedAt || null, url: url || '', tags: [], note: '', messages: null, lines: [], turnCount: 0 }; }
-const cleanLines = (a) => a.map(s => (s == null ? '' : String(s).trim())).filter(Boolean);
+const cleanLines = (a) => a.map(s => (s == null ? '' : String(s).replace(/[ \t]+$/, ''))); // 빈 줄·간격 그대로 보존
 const maxTurn = (ms) => ms.reduce((m, x) => Math.max(m, x.turn || 0), 0);
 
 /* ── 목록 ──────────────────────────────────────────────── */
@@ -323,7 +321,7 @@ function openReader(id) {
   current = entries.find(e => e.id === id); if (!current) return;
   editMode = false; $('#editBtn').textContent = '✎ 편집';
   $('#list').style.display = 'none'; $('#foot').style.display = 'none';
-  $('#reader').classList.add('on'); $('#page').classList.remove('reveal'); $('#revealBtn').textContent = '위젯 펼치기';
+  $('#reader').classList.add('on');
   window.scrollTo(0, 0);
   $('#rname').textContent = current.title;
   const u = units(current);
@@ -338,18 +336,16 @@ function drawPage() {
       if (m.turn && m.turn !== lastTurn) { if (lastTurn !== 0) html += '<hr class="turnrule">'; lastTurn = m.turn; }
       const who = `<div class="who">${esc(m.name || (m.role === 'char' ? '캐릭터' : '유저'))}</div>`;
       if (editMode) {
-        html += `<div class="msg ${m.role}">${who}<textarea class="edit" data-i="${i}" rows="${Math.min(16, Math.max(2, (m.text || '').split('\n').length + 1))}">${esc(m.text || '')}</textarea></div>`;
+        const rows = Math.min(40, Math.max(5, (m.text || '').split('\n').length + 1));
+        html += `<div class="msg ${m.role}">${who}<textarea class="edit" data-i="${i}" rows="${rows}">${esc(m.text || '')}</textarea></div>`;
       } else {
-        let body;
-        if (m.role === 'char' && m.html && !m.useText) body = `<div class="body rich">${richFormat(m.html)}</div>`;
-        else body = `<div class="body">${fmtTextPart(esc(m.text || ''))}</div>`;
-        html += `<div class="msg ${m.role}">${who}${body}${widgetHtml(m.widget)}</div>`;
+        html += `<div class="msg ${m.role}">${who}<div class="body plain">${esc(m.text || '')}</div>${widgetHtml(m.widget)}</div>`;
       }
     });
     page.innerHTML = html;
   } else {
-    if (editMode) page.innerHTML = `<textarea class="edit" id="lines-edit" rows="24">${esc((current.lines || []).join('\n'))}</textarea>`;
-    else page.innerHTML = (current.lines || []).map(l => `<p class="msg char"><span class="body" style="font-family:var(--serif);font-size:17px;line-height:1.92">${fmtTextPart(esc(l))}</span></p>`).join('');
+    if (editMode) page.innerHTML = `<textarea class="edit" id="lines-edit" rows="34">${esc((current.lines || []).join('\n'))}</textarea>`;
+    else page.innerHTML = `<div class="msg char"><div class="body plain" style="font-family:var(--serif);font-size:16px">${esc((current.lines || []).join('\n'))}</div></div>`;
   }
 }
 async function toggleEdit() {
@@ -361,7 +357,7 @@ async function toggleEdit() {
       if (current.messages[i] && v !== current.messages[i].text) { current.messages[i].text = v; if (current.messages[i].role === 'char') current.messages[i].useText = true; }
     });
   } else {
-    const ta = $('#lines-edit'); if (ta) current.lines = ta.value.split('\n').map(s => s.replace(/\s+$/, '')).filter((l, idx, arr) => l !== '' || (arr[idx - 1] !== ''));
+    const ta = $('#lines-edit'); if (ta) current.lines = ta.value.replace(/\r\n/g, '\n').split('\n').map(s => s.replace(/[ \t]+$/, ''));
   }
   editMode = false; $('#editBtn').textContent = '✎ 편집';
   await save(); drawPage();
@@ -434,7 +430,6 @@ $('#rname').addEventListener('blur', async () => { const v = $('#rname').textCon
 $('#note').addEventListener('blur', async () => { current.note = $('#note').value; await save(); });
 $('#tagin').addEventListener('keydown', async (e) => { if (e.key !== 'Enter') return; const v = e.target.value.trim(); e.target.value = ''; if (!v) return; current.tags = current.tags || []; if (!current.tags.includes(v)) current.tags.push(v); await save(); drawTags(); });
 $('#editBtn').addEventListener('click', toggleEdit);
-$('#revealBtn').addEventListener('click', () => { const p = $('#page'); const on = p.classList.toggle('reveal'); $('#revealBtn').textContent = on ? '위젯 접기' : '위젯 펼치기'; if (on) p.querySelectorAll('details').forEach(d => d.open = true); });
 $('#expTxt').addEventListener('click', () => dl('\uFEFF' + toTxt(current), `${safeName(current.title)}.txt`, 'text/plain'));
 $('#expJson').addEventListener('click', () => dl(JSON.stringify({ format: 'caveduck-backup-v2', title: current.title, savedAt: current.originalSavedAt || current.importedAt, url: current.url, turnCount: units(current).n, messages: current.messages, lines: current.lines }, null, 2), `${safeName(current.title)}.json`, 'application/json'));
 $('#del').addEventListener('click', async () => {
