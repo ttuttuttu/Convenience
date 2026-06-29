@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>보관함 ❀ 케이브덕 대화 아카이브</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet" />
+<!-- Firebase (compat) — 클라우드/로그인을 안 쓰면 자동으로 로컬 모드로 동작 -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --paper:#E8E4DE; --surface:#F4F1EC; --ink:#2A2227;
+    --plum:#6E4A5A; --plum-d:#5C3B4A; --mauve:#9A8B8F;
+    --line:#D8D0C9; --gold:#C9A24A;
+    --serif:'Gowun Batang', serif; --sans:'Pretendard', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  ::selection { background: rgba(110,74,90,.18); }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 28px 120px; }
+
+  /* ── 계정 바 ── */
+  .accountbar { display: flex; align-items: center; gap: 10px; justify-content: flex-end; font-size: 12.5px; color: var(--mauve); min-height: 24px; margin-bottom: 18px; }
+  .accountbar a { color: var(--plum); cursor: pointer; }
+  .accountbar .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); display: inline-block; }
+
+  header.masthead { margin-bottom: 30px; }
+  .eyebrow { font-size: 12px; letter-spacing: .28em; text-transform: uppercase; color: var(--mauve); margin: 0 0 10px; }
+  h1.title { font-family: var(--serif); font-weight: 700; font-size: 40px; line-height: 1.1; margin: 0; display: flex; align-items: baseline; gap: 12px; }
+  h1.title .orn { color: var(--gold); font-size: 26px; }
+  .lede { color: var(--mauve); font-size: 14px; margin: 12px 0 0; }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; margin: 24px 0 8px; flex-wrap: wrap; }
+  .search { flex: 1 1 220px; display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 13px; }
+  .search input { flex: 1; border: none; background: transparent; font: inherit; color: var(--ink); outline: none; }
+  .search .g { color: var(--mauve); }
+  button.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; padding: 9px 15px; border-radius: 10px; cursor: pointer; transition: border-color .15s, color .15s; }
+  button.btn:hover { border-color: var(--plum); color: var(--plum); }
+  button.btn.solid { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  button.btn.solid:hover { background: var(--plum-d); border-color: var(--plum-d); color: var(--paper); }
+  button.btn.small { padding: 7px 12px; font-size: 13px; }
+  .count { font-size: 13px; color: var(--mauve); margin-left: auto; }
+
+  #drop { border: 1px dashed var(--line); border-radius: 14px; padding: 44px 24px; text-align: center; color: var(--mauve); background: rgba(244,241,236,.5); margin-top: 16px; transition: border-color .15s, background .15s; }
+  #drop.hot { border-color: var(--plum); background: rgba(110,74,90,.06); color: var(--plum); }
+  #drop .big { font-family: var(--serif); font-size: 19px; color: var(--ink); margin-bottom: 6px; }
+  #drop label { color: var(--plum); text-decoration: underline; cursor: pointer; }
+
+  .catalog { margin-top: 14px; }
+  .entry { display: grid; grid-template-columns: 28px 1fr auto; gap: 14px; align-items: start; padding: 20px 4px; border-top: 1px solid var(--line); cursor: pointer; }
+  .entry:last-child { border-bottom: 1px solid var(--line); }
+  .entry:hover .ename { color: var(--plum); }
+  .entry .idx { font-family: var(--serif); color: var(--gold); font-size: 15px; padding-top: 2px; }
+  .ename { font-family: var(--serif); font-size: 20px; font-weight: 700; margin: 0 0 4px; transition: color .15s; }
+  .emeta { font-size: 12.5px; color: var(--mauve); }
+  .emeta b { color: var(--plum); font-weight: 600; }
+  .esnip { font-size: 13.5px; color: #6b5f63; margin-top: 7px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; color: var(--plum); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+  .entry .open { font-size: 18px; color: var(--mauve); padding-top: 2px; }
+  mark { background: rgba(201,162,74,.34); color: inherit; padding: 0 1px; border-radius: 2px; }
+
+  #reader { display: none; }
+  #reader.on { display: block; }
+  .rtop { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+  .rtop .back { cursor: pointer; color: var(--mauve); font-size: 14px; }
+  .rtop .back:hover { color: var(--plum); }
+  .rname { font-family: var(--serif); font-size: 30px; font-weight: 700; margin: 6px 0 4px; outline: none; border-bottom: 1px dashed transparent; }
+  .rname:focus { border-bottom-color: var(--line); }
+  .rmeta { font-size: 13px; color: var(--mauve); margin-bottom: 4px; }
+  .rtools { display: flex; gap: 8px; margin: 16px 0 8px; flex-wrap: wrap; }
+  .rtools input.tagin { font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--surface); outline: none; }
+  .note { width: 100%; font: inherit; resize: vertical; min-height: 0; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface); color: var(--ink); margin: 10px 0 6px; }
+  .glyphrule { text-align: center; color: var(--gold); margin: 22px 0; letter-spacing: .5em; }
+
+  .msg { margin: 0 0 24px; position: relative; }
+  .msg .who { font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 8px; }
+  .msg.char .who { color: var(--plum); }
+  .msg.user .who { color: var(--mauve); }
+  .msg.char .body { font-family: var(--serif); font-size: 17px; line-height: 1.85; }
+  .msg.user { border-left: 2px solid var(--line); padding-left: 16px; }
+  .msg.user .body { font-family: var(--sans); font-size: 14.5px; color: #5f5358; line-height: 1.7; }
+  .msg .body.plain { white-space: pre-wrap; word-break: break-word; }
+  .msg textarea.edit { width: 100%; min-height: 160px; font: inherit; font-size: 15px; line-height: 1.7; border: 1px solid var(--plum); border-radius: 8px; padding: 12px 14px; background: #fff; color: var(--ink); resize: vertical; }
+  hr.turnrule { border: none; border-top: 1px solid var(--line); margin: 26px 0; }
+
+  /* ── 위젯(이름:값) — 항상 보임 ── */
+  .widgetbox { border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 14px 0 0; background: rgba(244,241,236,.6); }
+  .wsec { margin: 2px 0 10px; }
+  .wsec:last-child { margin-bottom: 2px; }
+  .wtitle { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mauve); margin: 6px 0 7px; }
+  .wtitle::before { content: '⚘ '; color: var(--gold); }
+  .wrow { display: grid; grid-template-columns: 120px 1fr; gap: 12px; padding: 5px 0; border-top: 1px solid rgba(216,208,201,.6); font-size: 13.5px; }
+  .wrow:first-of-type { border-top: none; }
+  .wk { color: var(--plum-d); font-family: var(--sans); font-weight: 600; word-break: break-all; }
+  .wv { font-family: var(--sans); color: #5f5358; white-space: pre-wrap; word-break: break-word; }
+
+  .rich :is(p, div) { margin: 0 0 .85em; }
+  .rich strong { font-weight: 700; }
+  .rich details { border: 1px solid var(--line); border-radius: 10px; padding: 2px 14px; margin: 14px 0; background: rgba(244,241,236,.65); }
+  .rich summary { cursor: pointer; color: var(--plum); font-family: var(--sans); font-size: 13px; padding: 8px 0; list-style: none; }
+  .rich summary::-webkit-details-marker { display: none; }
+  .rich summary::before { content: '⚘ '; color: var(--gold); }
+  .rich table { border-collapse: collapse; margin: 12px 0; font-size: 13.5px; width: 100%; }
+  .rich td, .rich th { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+  .rich img { max-width: 100%; height: auto; }
+  /* 위젯 펼치기: 숨겨둔 패널/탭까지 강제로 보이게 */
+  #page.reveal [style*="display:none"], #page.reveal [style*="display: none"], #page.reveal [hidden] { display: revert !important; }
+  #page.reveal [style*="visibility:hidden"], #page.reveal [style*="visibility: hidden"] { visibility: visible !important; }
+
+  .danger:hover { border-color: #9a4a4a; color: #9a4a4a; }
+  footer { text-align: center; color: var(--mauve); font-size: 12px; margin-top: 60px; }
+  footer .orn { color: var(--gold); }
+
+  /* ── 로그인 게이트 ── */
+  #gate { position: fixed; inset: 0; background: var(--paper); z-index: 50; display: none; align-items: center; justify-content: center; padding: 24px; }
+  #gate.on { display: flex; }
+  .card { width: 360px; max-width: 100%; }
+  .card .eyebrow { text-align: center; }
+  .card h2 { font-family: var(--serif); font-size: 30px; text-align: center; margin: 0 0 6px; display: flex; gap: 10px; justify-content: center; align-items: baseline; }
+  .card h2 .orn { color: var(--gold); font-size: 22px; }
+  .card p.sub { text-align: center; color: var(--mauve); font-size: 13px; margin: 0 0 22px; }
+  .card label { display: block; font-size: 11px; color: var(--mauve); margin: 0 0 4px; }
+  .card input { width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px; font: inherit; background: var(--surface); outline: none; margin-bottom: 13px; }
+  .card input:focus { border-color: var(--plum); background: #fff; }
+  .card .actions { display: flex; gap: 9px; margin-top: 4px; }
+  .card .actions button { flex: 1; padding: 11px; border-radius: 9px; font: inherit; cursor: pointer; border: 1px solid var(--ink); }
+  .card .actions .signup { background: var(--surface); color: var(--ink); border-color: var(--line); }
+  .card .actions .login { background: var(--ink); color: var(--paper); }
+  .card .err { color: #9a4a4a; font-size: 12.5px; min-height: 16px; margin-top: 10px; text-align: center; }
+  .card .hint { font-size: 11.5px; color: var(--mauve); text-align: center; margin-top: 16px; line-height: 1.6; }
+
+  @media (max-width: 560px) { .wrap { padding: 20px 18px 90px; } h1.title { font-size: 32px; } }
+</style>
+</head>
+<body>
+
+<!-- 로그인 게이트 -->
+<div id="gate">
+  <div class="card">
+    <p class="eyebrow">caveduck archive</p>
+    <h2><span class="orn">❀</span>보관함</h2>
+    <p class="sub">로그인하면 어느 기기에서나 같은 보관함을 볼 수 있어요.</p>
+    <label>이메일</label>
+    <input id="g-email" type="email" autocomplete="username" placeholder="you@example.com" />
+    <label>비밀번호</label>
+    <input id="g-pw" type="password" autocomplete="current-password" placeholder="6자 이상" />
+    <div class="actions">
+      <button class="signup" id="g-signup">회원가입</button>
+      <button class="login" id="g-login">로그인</button>
+    </div>
+    <div class="err" id="g-err"></div>
+    <p class="hint" id="g-hint"></p>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="accountbar" id="accountbar"></div>
+
+  <div id="list">
+    <header class="masthead">
+      <p class="eyebrow">caveduck archive</p>
+      <h1 class="title"><span class="orn">❀</span>보관함</h1>
+      <p class="lede">백업한 대화를 모아 두고, 언제든 다시 펼쳐 읽는 곳.</p>
+    </header>
+
+    <div class="toolbar">
+      <div class="search"><span class="g">✦</span><input id="q" type="text" placeholder="제목·내용·태그 검색" /></div>
+      <button class="btn solid" id="importBtn">파일 가져오기</button>
+      <button class="btn" id="exportAll">전체 내보내기</button>
+      <input id="file" type="file" accept=".json,.txt" multiple hidden />
+    </div>
+    <div class="count" id="count"></div>
+
+    <div id="drop">
+      <div class="big">여기로 백업 파일을 끌어다 놓으세요</div>
+      <div>케덕백업_*.json 또는 일반 .txt &nbsp;·&nbsp; <label for="file">직접 고르기</label></div>
+    </div>
+
+    <div class="catalog" id="catalog"></div>
+  </div>
+
+  <div id="reader">
+    <div class="rtop"><span class="back" id="back">← 보관함으로</span></div>
+    <div class="rname" id="rname" contenteditable="true" spellcheck="false"></div>
+    <div class="rmeta" id="rmeta"></div>
+    <div class="rtools">
+      <input class="tagin" id="tagin" placeholder="태그 추가 후 Enter" />
+      <button class="btn small" id="editBtn">✎ 편집</button>
+      <button class="btn small" id="expTxt">.txt로 저장</button>
+      <button class="btn small" id="expJson">.json으로 저장</button>
+      <button class="btn small danger" id="del">삭제</button>
+    </div>
+    <div class="tags" id="rtags"></div>
+    <textarea class="note" id="note" rows="2" placeholder="메모 — 이 대화에 대해 남기고 싶은 말"></textarea>
+    <div class="glyphrule">❀ ⚘ ❀</div>
+    <div id="page"></div>
+    <footer>❀ &nbsp;끝 &nbsp;❀</footer>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ① Firebase 설정 — 콘솔 > 프로젝트 설정 > 내 앱(웹)에서 복사해 채우세요.
+      비워 두면(또는 그대로 두면) 로그인 없이 '로컬 모드'로 동작합니다.
+   ═══════════════════════════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey:        "여기에-API-KEY",
+  authDomain:    "여기에-PROJECT.firebaseapp.com",
+  databaseURL:   "https://여기에-PROJECT-default-rtdb.firebasedatabase.app",
+  projectId:     "여기에-PROJECT-ID",
+  appId:         "여기에-APP-ID"
+};
+
+/* ── 유틸 ──────────────────────────────────────────────── */
+let entries = [], current = null, editMode = false;
+const $ = (s) => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = (s) => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const fmtDate = (iso) => { try { return new Date(iso).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return ''; } };
+const clean = (o) => JSON.parse(JSON.stringify(o)); // undefined 제거 (RTDB용)
+
+/* ── 출력 내용 그대로: 원래 줄바꿈만 보존(별표·따옴표 가공 없음) ── */
+function formatDialogue(text) {
+  if (!text) return '';
+  return String(text).replace(/\r\n/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+// 표시용 HTML: 줄바꿈만 <br>로 (이미 이스케이프된 텍스트에 적용)
+function fmtTextPart(s) {
+  return formatDialogue(s).replace(/\n/g, '<br>');
+}
+function sanitize(raw) {
+  return String(raw || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/ on\w+\s*=\s*"[^"]*"/gi, '').replace(/ on\w+\s*=\s*'[^']*'/gi, '').replace(/javascript:/gi, '');
+}
+// 캐릭터 답변(HTML): 태그는 보존, 태그 바깥 텍스트에만 대사 서식 적용
+function richFormat(rawHtml) {
+  return sanitize(rawHtml).split(/(<[^>]+>)/).map((part, idx) => idx % 2 === 1 ? part : fmtTextPart(part)).join('');
+}
+// HTML은 렌더하되, 태그 바깥 줄바꿈은 그대로 <br>로 (가공 없음)
+function htmlKeepBreaks(raw) {
+  return sanitize(raw).split(/(<[^>]+>)/).map((p, i) => i % 2 ? p : p.replace(/\n/g, '<br>')).join('');
+}
+// 위젯(이름:값) — 항상 보이는 블록
+function widgetHtml(w) {
+  if (!w) return '';
+  const sec = (title, arr) => {
+    if (!arr || !arr.length) return '';
+    const rows = arr.map(([n, v]) => `<div class="wrow"><span class="wk">${esc(n)}</span><span class="wv">${esc(v)}</span></div>`).join('');
+    return `<div class="wsec"><div class="wtitle">${esc(title)}</div>${rows}</div>`;
+  };
+  const inner = sec('크리에이터 위젯', w.creator) + sec('유저 위젯', w.player);
+  return inner ? `<div class="widgetbox">${inner}</div>` : '';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ② 저장소 — 로그인 전: 로컬(IndexedDB) / 로그인 후: 클라우드(RTDB)
+   ═══════════════════════════════════════════════════════════════ */
+function idb() { return new Promise((res, rej) => { const r = indexedDB.open('ttu-caveduck-archive', 1); r.onupgradeneeded = () => r.result.createObjectStore('entries', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbAll() { const db = await idb(); return new Promise((res, rej) => { const r = db.transaction('entries').objectStore('entries').getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); }); }
+async function idbPut(v) { const db = await idb(); return new Promise((res, rej) => { const t = db.transaction('entries', 'readwrite'); t.objectStore('entries').put(v); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+async function idbDel(id) { const db = await idb(); return new Promise((res, rej) => { const t = db.transaction('entries', 'readwrite'); t.objectStore('entries').delete(id); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+
+const cloudRef = () => firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/entries');
+async function cloudAll() { const snap = await cloudRef().get(); const v = snap.val() || {}; return Object.values(v); }
+async function cloudPut(e) { await cloudRef().child(e.id).set(clean(e)); }
+async function cloudDel(id) { await cloudRef().child(id).remove(); }
+
+const Store = {
+  mode: 'local',
+  all() { return this.mode === 'cloud' ? cloudAll() : idbAll(); },
+  put(e) { return this.mode === 'cloud' ? cloudPut(e) : idbPut(e); },
+  del(id) { return this.mode === 'cloud' ? cloudDel(id) : idbDel(id); },
+};
+
+/* ── 가져오기 ──────────────────────────────────────────── */
+async function ingestFile(file) {
+  const text = await file.text(); let e = null;
+  if (file.name.endsWith('.json')) {
+    let j; try { j = JSON.parse(text); } catch { j = null; }
+    if (j && j.format === 'caveduck-archive-export' && Array.isArray(j.entries)) {
+      for (const it of j.entries) { it.id = it.id || uid(); await Store.put(it); } return;
+    } else if (j && Array.isArray(j.messages)) {
+      const gid = j.groupId || null;
+      if (gid && (j.parts || 1) > 1) {
+        // 조각난 백업 — 같은 대화(groupId)끼리 합치기
+        const existing = (await Store.all()).find((x) => x.groupId === gid);
+        if (existing) {
+          existing.messages = mergeMessages(existing.messages || [], j.messages);
+          existing.turnCount = j.turnCount || maxTurn(existing.messages);
+          existing.partsLoaded = (existing.partsLoaded || 1) + 1;
+          await Store.put(existing); return;
+        }
+      }
+      e = baseEntry(j.title, j.savedAt, j.url); e.messages = j.messages; e.turnCount = j.turnCount || maxTurn(j.messages); e.lines = j.lines || j.messages.map(m => m.text);
+      e.groupId = gid; e.partsLoaded = 1;
+    } else if (j && Array.isArray(j.lines)) {
+      e = baseEntry(j.title, j.savedAt, j.url); e.lines = cleanLines(j.lines);
+    } else { e = baseEntry(file.name.replace(/\.json$/, ''), null, ''); e.lines = cleanLines(text.split('\n')); }
+  } else { e = baseEntry(file.name.replace(/\.txt$/, ''), null, ''); e.lines = cleanLines(text.split('\n')); }
+  if (e) await Store.put(e);
+}
+function baseEntry(title, savedAt, url) { return { id: uid(), title: (title || '제목 없음').trim() || '제목 없음', importedAt: new Date().toISOString(), originalSavedAt: savedAt || null, url: url || '', tags: [], note: '', messages: null, lines: [], turnCount: 0 }; }
+const cleanLines = (a) => a.map(s => (s == null ? '' : String(s).replace(/[ \t]+$/, ''))); // 빈 줄·간격 그대로 보존
+const maxTurn = (ms) => ms.reduce((m, x) => Math.max(m, x.turn || 0), 0);
+// 조각 합치기: 턴·역할 기준 중복 제거 후 턴 순 정렬
+function mergeMessages(a, b) {
+  const seen = new Set(), out = [];
+  for (const m of [...(a || []), ...(b || [])]) {
+    const k = (m.turn || 0) + '|' + m.role + '|' + (m.text || '').slice(0, 24);
+    if (seen.has(k)) continue; seen.add(k); out.push(m);
+  }
+  out.sort((x, y) => ((x.turn || 0) - (y.turn || 0)) || (x.role === 'user' ? -1 : 1));
+  return out;
+}
+
+/* ── 목록 ──────────────────────────────────────────────── */
+const entryText = (e) => (e.messages ? e.messages.map(m => m.text).join('\n') : (e.lines || []).join('\n'));
+const units = (e) => e.messages ? { n: e.turnCount || maxTurn(e.messages), label: '턴' } : { n: (e.lines || []).length, label: '줄' };
+const snippet = (e) => (e.messages ? e.messages.slice(0, 3).map(m => m.text).join(' ') : (e.lines || []).slice(0, 4).join(' '));
+
+function render() {
+  const q = $('#q').value.trim().toLowerCase();
+  const view = entries.slice().sort((a, b) => (b.importedAt || '').localeCompare(a.importedAt || ''))
+    .filter(e => !q || e.title.toLowerCase().includes(q) || (e.tags || []).some(t => t.toLowerCase().includes(q)) || entryText(e).toLowerCase().includes(q));
+  $('#count').textContent = entries.length ? `${view.length}건${q ? ' / 전체 ' + entries.length + '건' : ''}` : '';
+  $('#drop').style.display = entries.length ? 'none' : 'block';
+  $('#catalog').innerHTML = view.map((e, i) => {
+    const n = String(view.length - i).padStart(2, '0'); const u = units(e);
+    const tags = (e.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+    let snip = esc(snippet(e)); if (q) snip = hl(snip, q);
+    return `<div class="entry" data-id="${e.id}"><div class="idx">${n}</div><div><p class="ename">${esc(e.title)}</p><div class="emeta"><b>${u.n.toLocaleString()}</b>${u.label} · ${fmtDate(e.originalSavedAt || e.importedAt)}</div><div class="esnip">${snip}</div>${tags ? `<div class="tags">${tags}</div>` : ''}</div><div class="open">☞</div></div>`;
+  }).join('');
+  $('#catalog').querySelectorAll('.entry').forEach(el => el.addEventListener('click', () => openReader(el.dataset.id)));
+}
+function hl(s, q) { const i = s.toLowerCase().indexOf(q); return i < 0 ? s : s.slice(0, i) + '<mark>' + s.slice(i, i + q.length) + '</mark>' + s.slice(i + q.length); }
+
+/* ── 읽기 / 편집 ───────────────────────────────────────── */
+function openReader(id) {
+  current = entries.find(e => e.id === id); if (!current) return;
+  editMode = false; $('#editBtn').textContent = '✎ 편집';
+  $('#list').style.display = 'none'; $('#foot').style.display = 'none';
+  $('#reader').classList.add('on');
+  window.scrollTo(0, 0);
+  $('#rname').textContent = current.title;
+  const u = units(current);
+  $('#rmeta').textContent = `${u.n.toLocaleString()}${u.label} · 백업 ${fmtDate(current.originalSavedAt || current.importedAt)}`;
+  $('#note').value = current.note || ''; drawTags(); drawPage();
+}
+function drawPage() {
+  const page = $('#page');
+  if (current.messages && current.messages.length) {
+    let html = '', lastTurn = 0;
+    current.messages.forEach((m, i) => {
+      if (m.turn && m.turn !== lastTurn) { if (lastTurn !== 0) html += '<hr class="turnrule">'; lastTurn = m.turn; }
+      const who = `<div class="who">${esc(m.name || (m.role === 'char' ? '캐릭터' : '유저'))}</div>`;
+      if (editMode) {
+        const rows = Math.min(40, Math.max(5, (m.text || '').split('\n').length + 1));
+        html += `<div class="msg ${m.role}">${who}<textarea class="edit" data-i="${i}" rows="${rows}">${esc(m.text || '')}</textarea></div>`;
+      } else {
+        const raw = m.role === 'char' ? (m.html || m.text || '') : (m.text || '');
+        const looksHtml = /<\/?[a-z][\s\S]*>/i.test(raw) && !m.useText;
+        const body = looksHtml
+          ? `<div class="body rich">${htmlKeepBreaks(raw)}</div>`
+          : `<div class="body plain">${esc(m.text || '')}</div>`;
+        html += `<div class="msg ${m.role}">${who}${body}${widgetHtml(m.widget)}</div>`;
+      }
+    });
+    page.innerHTML = html;
+  } else {
+    if (editMode) page.innerHTML = `<textarea class="edit" id="lines-edit" rows="34">${esc((current.lines || []).join('\n'))}</textarea>`;
+    else { const joined = (current.lines || []).join('\n'); const looksHtml = /<\/?[a-z][\s\S]*>/i.test(joined); page.innerHTML = `<div class="msg char"><div class="${looksHtml ? 'body rich' : 'body plain'}" style="font-family:var(--serif);font-size:16px">${looksHtml ? htmlKeepBreaks(joined) : esc(joined)}</div></div>`; }
+  }
+}
+async function toggleEdit() {
+  if (!editMode) { editMode = true; $('#editBtn').textContent = '✓ 저장'; drawPage(); return; }
+  // 저장
+  if (current.messages && current.messages.length) {
+    $('#page').querySelectorAll('textarea.edit').forEach(ta => {
+      const i = +ta.dataset.i, v = ta.value;
+      if (current.messages[i] && v !== current.messages[i].text) { current.messages[i].text = v; if (current.messages[i].role === 'char') current.messages[i].useText = true; }
+    });
+  } else {
+    const ta = $('#lines-edit'); if (ta) current.lines = ta.value.replace(/\r\n/g, '\n').split('\n').map(s => s.replace(/[ \t]+$/, ''));
+  }
+  editMode = false; $('#editBtn').textContent = '✎ 편집';
+  await save(); drawPage();
+}
+function drawTags() {
+  $('#rtags').innerHTML = (current.tags || []).map((t, i) => `<span class="tag" data-i="${i}" title="클릭하면 삭제" style="cursor:pointer">${esc(t)} ✕</span>`).join('');
+  $('#rtags').querySelectorAll('.tag').forEach(el => el.addEventListener('click', async () => { current.tags.splice(+el.dataset.i, 1); await save(); drawTags(); }));
+}
+async function save() { try { await Store.put(current); await reload(false); } catch (e) { alert('저장 실패: ' + e.message); } }
+function closeReader() { $('#reader').classList.remove('on'); $('#list').style.display = 'block'; $('#foot').style.display = 'block'; render(); }
+
+/* ── 내보내기 ──────────────────────────────────────────── */
+const safeName = (s) => String(s).replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
+function dl(text, name, type) { const url = URL.createObjectURL(new Blob([text], { type: type + ';charset=utf-8' })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
+function toTxt(e) {
+  if (e.messages && e.messages.length) {
+    const L = [`❀ ${e.title}`, `백업 ${fmtDate(e.originalSavedAt || e.importedAt)} · 총 ${units(e).n}턴`, '━'.repeat(48)]; let lt = 0;
+    for (const m of e.messages) { if (m.turn && m.turn !== lt) { lt = m.turn; L.push('', '─'.repeat(48), `Turn ${m.turn}`, '─'.repeat(48)); } L.push('', `${m.role === 'char' ? '🤖' : '🗣'} [${m.name || (m.role === 'char' ? '캐릭터' : '유저')}]`, formatDialogue(m.text)); if (m.widget) { const wsec = (t, arr) => { if (!arr || !arr.length) return; L.push('', `〔${t}〕`); arr.forEach(([n, v]) => L.push(`${n} : ${v}`)); }; wsec('크리에이터 위젯', m.widget.creator); wsec('유저 위젯', m.widget.player); } }
+    L.push('', '━'.repeat(48), '❀ 끝'); return L.join('\n');
+  }
+  return (e.lines || []).map(formatDialogue).join('\n');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ③ 로그인 / 계정
+   ═══════════════════════════════════════════════════════════════ */
+const cloudReady = (() => {
+  if (typeof firebase === 'undefined' || !FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey.includes('여기에')) return false;
+  try { firebase.initializeApp(FIREBASE_CONFIG); return true; } catch { return false; }
+})();
+
+function authMessage(code) {
+  const m = { 'auth/invalid-email': '이메일 형식이 올바르지 않아요.', 'auth/missing-password': '비밀번호를 입력해 주세요.', 'auth/weak-password': '비밀번호는 6자 이상이어야 해요.', 'auth/email-already-in-use': '이미 가입된 이메일이에요. 로그인해 주세요.', 'auth/invalid-credential': '이메일 또는 비밀번호가 맞지 않아요.', 'auth/user-not-found': '가입되지 않은 이메일이에요.', 'auth/wrong-password': '비밀번호가 맞지 않아요.', 'auth/too-many-requests': '잠시 후 다시 시도해 주세요.' };
+  return m[code] || ('오류: ' + code);
+}
+function setAccountBar(user) {
+  const bar = $('#accountbar');
+  if (!cloudReady) { bar.innerHTML = `<span>로컬 모드 — 이 브라우저에만 저장됨</span>`; $('#foot').innerHTML = '로컬에 저장됩니다 · 클라우드를 쓰려면 코드 상단 Firebase 설정을 채우세요 <span class="orn">❀</span>'; return; }
+  if (user) {
+    bar.innerHTML = `<span class="dot"></span><span>${esc(user.email)}</span> · <a id="ac-migrate">로컬→클라우드 올리기</a> · <a id="ac-logout">로그아웃</a>`;
+    $('#foot').innerHTML = '클라우드에 저장됩니다 · 어느 기기에서나 로그인하면 보여요 <span class="orn">❀</span>';
+    $('#ac-logout').addEventListener('click', () => firebase.auth().signOut());
+    $('#ac-migrate').addEventListener('click', migrateLocalToCloud);
+  } else { bar.innerHTML = ''; }
+}
+async function migrateLocalToCloud() {
+  const local = await idbAll();
+  if (!local.length) return alert('이 브라우저의 로컬 보관함이 비어 있어요.');
+  if (!confirm(`로컬 ${local.length}건을 클라우드로 올릴까요?`)) return;
+  for (const e of local) { e.id = e.id || uid(); await cloudPut(e); }
+  await reload(); alert(`${local.length}건 올렸어요.`);
+}
+
+/* ── 이벤트 ────────────────────────────────────────────── */
+async function reload(rerender = true) { try { entries = await Store.all(); } catch (e) { entries = []; alert('불러오기 실패: ' + e.message); } if (rerender) render(); }
+
+$('#q').addEventListener('input', render);
+$('#importBtn').addEventListener('click', () => $('#file').click());
+$('#file').addEventListener('change', async (ev) => { for (const f of ev.target.files) { try { await ingestFile(f); } catch (_) { alert('가져오기 실패: ' + f.name); } } ev.target.value = ''; await reload(); });
+
+const drop = $('#drop'), wrapEl = document.body;
+['dragover', 'dragenter'].forEach(t => wrapEl.addEventListener(t, e => { e.preventDefault(); drop.classList.add('hot'); drop.style.display = 'block'; }));
+wrapEl.addEventListener('dragleave', e => { e.preventDefault(); if (e.relatedTarget) return; drop.classList.remove('hot'); if (entries.length) drop.style.display = 'none'; });
+wrapEl.addEventListener('drop', async (e) => { e.preventDefault(); drop.classList.remove('hot'); for (const f of [...(e.dataTransfer?.files || [])]) { try { await ingestFile(f); } catch (_) { alert('가져오기 실패: ' + f.name); } } await reload(); });
+
+$('#exportAll').addEventListener('click', () => { if (!entries.length) return alert('보관된 대화가 없어요.'); dl(JSON.stringify({ format: 'caveduck-archive-export', exportedAt: new Date().toISOString(), entries }, null, 2), `보관함_전체_${new Date().toISOString().slice(0, 10)}.json`, 'application/json'); });
+
+$('#back').addEventListener('click', () => { if (editMode) { editMode = false; $('#editBtn').textContent = '✎ 편집'; } closeReader(); });
+$('#rname').addEventListener('blur', async () => { const v = $('#rname').textContent.trim() || '제목 없음'; if (v !== current.title) { current.title = v; await save(); } });
+$('#note').addEventListener('blur', async () => { current.note = $('#note').value; await save(); });
+$('#tagin').addEventListener('keydown', async (e) => { if (e.key !== 'Enter') return; const v = e.target.value.trim(); e.target.value = ''; if (!v) return; current.tags = current.tags || []; if (!current.tags.includes(v)) current.tags.push(v); await save(); drawTags(); });
+$('#editBtn').addEventListener('click', toggleEdit);
+$('#expTxt').addEventListener('click', () => dl('\uFEFF' + toTxt(current), `${safeName(current.title)}.txt`, 'text/plain'));
+$('#expJson').addEventListener('click', () => dl(JSON.stringify({ format: 'caveduck-backup-v2', title: current.title, savedAt: current.originalSavedAt || current.importedAt, url: current.url, turnCount: units(current).n, messages: current.messages, lines: current.lines }, null, 2), `${safeName(current.title)}.json`, 'application/json'));
+$('#del').addEventListener('click', async () => {
+  if (!current || !confirm(`'${current.title}' 을(를) 보관함에서 지울까요?`)) return;
+  try { await Store.del(current.id); } catch (e) { return alert('삭제 실패: ' + e.message); }
+  await reload(false); closeReader();
+});
+
+/* 로그인 게이트 */
+if (cloudReady) {
+  $('#g-hint').textContent = '처음이면 이메일·비밀번호로 회원가입하세요.';
+  const doAuth = async (kind) => {
+    const email = $('#g-email').value.trim(), pw = $('#g-pw').value;
+    $('#g-err').textContent = '';
+    try { kind === 'signup' ? await firebase.auth().createUserWithEmailAndPassword(email, pw) : await firebase.auth().signInWithEmailAndPassword(email, pw); }
+    catch (e) { $('#g-err').textContent = authMessage(e.code); }
+  };
+  $('#g-login').addEventListener('click', () => doAuth('login'));
+  $('#g-signup').addEventListener('click', () => doAuth('signup'));
+  $('#g-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth('login'); });
+
+  firebase.auth().onAuthStateChanged(async (user) => {
+    if (user) { Store.mode = 'cloud'; $('#gate').classList.remove('on'); setAccountBar(user); await reload(); }
+    else { Store.mode = 'local'; $('#gate').classList.add('on'); entries = []; render(); }
+  });
+} else {
+  Store.mode = 'local'; setAccountBar(null); reload();
+}
+</script>
+
+<!-- ── 발췌 기능: 바로가기 버튼 + 선택 시 공유 버튼 ── -->
+<script>
+(function () {
+  // 발췌 사이트 주소 (같은 폴더의 excerpt.html). 파일명이 다르면 여기만 바꾸세요.
+  const EXCERPT_URL = 'excerpt.html';
+
+  const st = document.createElement('style');
+  st.textContent = `
+    #ttu-ex-link { position: fixed; left: 16px; bottom: 16px; z-index: 9000;
+      display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border: none;
+      border-radius: 999px; background: #2A2227; color: #ECE7E1; cursor: pointer;
+      font-family: 'Pretendard', system-ui, sans-serif; font-size: 13px;
+      box-shadow: 0 4px 16px rgba(42,34,39,.26); }
+    #ttu-ex-link:hover { background: #5C3B4A; }
+    #ttu-ex-link .g { color: #C9A24A; }
+    #ttu-ex-share { position: fixed; z-index: 9001; transform: translate(-50%, -100%);
+      padding: 7px 13px; border: none; border-radius: 8px; background: #5C3B4A; color: #F4F1EC;
+      font-family: 'Pretendard', system-ui, sans-serif; font-size: 12.5px; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(42,34,39,.3); display: none; white-space: nowrap; }
+    #ttu-ex-share::after { content: ''; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%);
+      border: 5px solid transparent; border-top-color: #5C3B4A; border-bottom: 0; }
+  `;
+  document.head.appendChild(st);
+
+  const link = document.createElement('button');
+  link.id = 'ttu-ex-link';
+  link.innerHTML = '<span class="g">✂</span><span>발췌 사이트</span>';
+  link.addEventListener('click', () => window.open(EXCERPT_URL, '_blank'));
+  document.body.appendChild(link);
+
+  const share = document.createElement('button');
+  share.id = 'ttu-ex-share';
+  share.textContent = '❀ 발췌하기';
+  document.body.appendChild(share);
+
+  let lastText = '';
+  function update() {
+    const sel = window.getSelection();
+    const text = sel ? sel.toString().trim() : '';
+    const page = document.getElementById('page'); // 읽기 영역 안에서만
+    if (!text || !sel.rangeCount || !page || !page.contains(sel.anchorNode)) { share.style.display = 'none'; return; }
+    lastText = text;
+    const r = sel.getRangeAt(0).getBoundingClientRect();
+    share.style.left = (r.left + r.width / 2) + 'px';
+    share.style.top = (r.top - 8) + 'px';
+    share.style.display = 'block';
+  }
+  document.addEventListener('selectionchange', () => setTimeout(update, 0));
+  window.addEventListener('scroll', () => { if (share.style.display === 'block') update(); }, true);
+
+  share.addEventListener('mousedown', (e) => e.preventDefault());
+  share.addEventListener('click', () => {
+    if (!lastText) return;
+    const sig = (document.getElementById('rname')?.textContent || '').trim();
+    try { localStorage.setItem('ttu_excerpt_payload', JSON.stringify({ text: lastText, sig, ts: Date.now() })); } catch (_) {}
+    share.style.display = 'none';
+    window.open(EXCERPT_URL, '_blank');
+  });
+})();
+</script>
+</body>
+</html>
