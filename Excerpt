@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>발췌 ❀ 케이브덕</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --paper:#E8E4DE; --surface:#F4F1EC; --ink:#2A2227;
+    --plum:#6E4A5A; --plum-d:#5C3B4A; --mauve:#9A8B8F;
+    --line:#D8D0C9; --gold:#C9A24A;
+    --serif:'Gowun Batang', serif; --sans:'Pretendard', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { margin-bottom: 22px; }
+  .eyebrow { font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--mauve); margin: 0 0 8px; }
+  h1 { font-family: var(--serif); font-weight: 700; font-size: 30px; margin: 0; display: flex; gap: 10px; align-items: baseline; }
+  h1 .orn { color: var(--gold); font-size: 20px; }
+  .lede { color: var(--mauve); font-size: 13px; margin: 8px 0 0; }
+
+  .layout { display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: start; }
+  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+
+  /* ── 미리보기(내보낼 카드) ── */
+  .stage { display: flex; justify-content: center; padding: 18px; background: repeating-conic-gradient(#ECE9E3 0% 25%, #E3DED7 0% 50%) 50% / 22px 22px; border-radius: 14px; }
+  #card {
+    width: 100%; max-width: 560px; min-height: 220px; padding: 40px 38px; border-radius: 16px;
+    background: linear-gradient(135deg, #6E4A5A, #2A2227); color: #F4F1EC;
+    font-family: var(--serif); font-size: 19px; line-height: 1.9; outline: none;
+    box-shadow: 0 14px 40px rgba(42,34,39,.28); word-break: break-word; white-space: pre-wrap;
+  }
+  #card:empty::before { content: '여기에 발췌할 글이 들어옵니다. 직접 입력하거나 붙여넣어도 돼요.'; color: rgba(255,255,255,.5); }
+  #card .sig { display: block; margin-top: 18px; font-family: var(--sans); font-size: 12px; letter-spacing: .1em; opacity: .7; }
+
+  /* ── 컨트롤 패널 ── */
+  .panel { display: flex; flex-direction: column; gap: 18px; }
+  .group { border: 1px solid var(--line); border-radius: 12px; padding: 14px 15px; background: var(--surface); }
+  .group h3 { margin: 0 0 11px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--mauve); font-weight: 600; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 9px; }
+  .row:last-child { margin-bottom: 0; }
+  .seg { display: flex; gap: 4px; background: #E3DCD4; border-radius: 8px; padding: 3px; }
+  .seg button { flex: 1; border: none; background: transparent; padding: 7px 9px; border-radius: 6px; font: inherit; font-size: 12.5px; color: var(--ink); cursor: pointer; }
+  .seg button.on { background: #fff; color: var(--plum-d); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  label.lab { font-size: 12px; color: var(--mauve); min-width: 38px; }
+  input[type=color] { width: 34px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: #fff; cursor: pointer; }
+  input.hex { width: 92px; font: inherit; font-size: 12.5px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); outline: none; }
+  input.hex:focus { border-color: var(--plum); }
+  input[type=range] { flex: 1; accent-color: var(--plum); }
+  .btn { border: 1px solid var(--line); background: #fff; color: var(--ink); font: inherit; font-size: 12.5px; padding: 8px 11px; border-radius: 8px; cursor: pointer; }
+  .btn:hover { border-color: var(--plum); color: var(--plum); }
+  .btn.full { width: 100%; }
+  .btn.solid { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn.solid:hover { background: var(--plum-d); border-color: var(--plum-d); color: var(--paper); }
+  .hint { font-size: 11px; color: var(--mauve); margin-top: 6px; line-height: 1.5; }
+  .filebtn { position: relative; overflow: hidden; }
+  .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">caveduck excerpt</p>
+    <h1><span class="orn">❀</span>발췌</h1>
+    <p class="lede">고른 글을 카드로 꾸며 이미지로 저장하거나 텍스트로 가져가세요. (저장은 안 되고 내려받기/복사만 돼요.)</p>
+  </header>
+
+  <div class="layout">
+    <div class="stage" id="stage">
+      <div id="card" contenteditable="true" spellcheck="false"></div>
+    </div>
+
+    <div class="panel">
+      <div class="group">
+        <h3>배경</h3>
+        <div class="seg" id="bgmode">
+          <button data-m="gradient" class="on">그라데이션</button>
+          <button data-m="solid">단색</button>
+          <button data-m="image">이미지</button>
+        </div>
+        <div id="bg-grad">
+          <div class="row"><label class="lab">색 1</label><input type="color" id="c1" value="#6E4A5A"><input class="hex" id="c1h" value="#6E4A5A"></div>
+          <div class="row"><label class="lab">색 2</label><input type="color" id="c2" value="#2A2227"><input class="hex" id="c2h" value="#2A2227"></div>
+          <div class="row"><label class="lab">각도</label><input type="range" id="ang" min="0" max="360" value="135"><span id="angv" style="font-size:12px;color:var(--mauve);min-width:34px">135°</span></div>
+        </div>
+        <div id="bg-solid" style="display:none">
+          <div class="row"><label class="lab">색</label><input type="color" id="cs" value="#2A2227"><input class="hex" id="csh" value="#2A2227"></div>
+        </div>
+        <div id="bg-image" style="display:none">
+          <div class="row"><button class="btn full filebtn">이미지 고르기<input type="file" id="bgfile" accept="image/*"></button></div>
+          <div class="row"><label class="lab">어둡게</label><input type="range" id="dark" min="0" max="80" value="30"></div>
+          <p class="hint">사진 위에 글이 잘 보이게 어둡게 정도를 조절하세요.</p>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>글자</h3>
+        <div class="row">
+          <button class="btn" id="hl">형광펜</button>
+          <input type="color" id="hlc" value="#C9A24A">
+          <button class="btn" id="ul">밑줄</button>
+        </div>
+        <div class="row">
+          <label class="lab">글자색</label><input type="color" id="fc" value="#F4F1EC">
+          <button class="btn" id="clear">효과 지우기</button>
+        </div>
+        <div class="row">
+          <label class="lab">글꼴</label>
+          <div class="seg" id="font" style="flex:1">
+            <button data-f="serif" class="on">명조</button>
+            <button data-f="sans">고딕</button>
+          </div>
+        </div>
+        <div class="row">
+          <label class="lab">크기</label><input type="range" id="size" min="14" max="30" value="19"><span id="sizev" style="font-size:12px;color:var(--mauve)">19</span>
+        </div>
+        <div class="row">
+          <label class="lab">서명</label><input class="hex" id="sig" style="width:auto;flex:1" placeholder="예: ❀ 재하 · 3,015턴 (선택)">
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>내보내기</h3>
+        <button class="btn solid full" id="png" style="margin-bottom:8px">이미지로 저장</button>
+        <div class="row">
+          <button class="btn" id="copy" style="flex:1">텍스트 복사</button>
+          <button class="btn" id="txt" style="flex:1">.txt 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const card = $('#card');
+
+/* ── 들어온 발췌 텍스트 받기 (보관함과 같은 도메인 localStorage 공유) ── */
+(function loadIncoming() {
+  try {
+    const raw = localStorage.getItem('ttu_excerpt_payload');
+    if (raw) {
+      const p = JSON.parse(raw);
+      card.textContent = (p.text || '').trim();
+      if (p.sig) $('#sig').value = p.sig;
+      localStorage.removeItem('ttu_excerpt_payload'); // 한 번 읽고 비움
+    }
+  } catch (_) {}
+  applySig();
+})();
+
+/* ── 배경 ── */
+const bg = { mode: 'gradient', c1: '#6E4A5A', c2: '#2A2227', ang: 135, cs: '#2A2227', img: null, dark: 30 };
+function paint() {
+  if (bg.mode === 'gradient') card.style.background = `linear-gradient(${bg.ang}deg, ${bg.c1}, ${bg.c2})`;
+  else if (bg.mode === 'solid') card.style.background = bg.cs;
+  else if (bg.mode === 'image' && bg.img) card.style.background = `linear-gradient(rgba(0,0,0,${bg.dark/100}), rgba(0,0,0,${bg.dark/100})), url(${bg.img}) center/cover`;
+  else if (bg.mode === 'image') card.style.background = '#2A2227';
+}
+$('#bgmode').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  bg.mode = b.dataset.m;
+  [...$('#bgmode').children].forEach(x => x.classList.toggle('on', x === b));
+  $('#bg-grad').style.display = bg.mode === 'gradient' ? '' : 'none';
+  $('#bg-solid').style.display = bg.mode === 'solid' ? '' : 'none';
+  $('#bg-image').style.display = bg.mode === 'image' ? '' : 'none';
+  paint();
+});
+function syncColor(picker, hex, key) {
+  const set = (v) => { if (!/^#[0-9a-fA-F]{6}$/.test(v)) return; bg[key] = v; $(picker).value = v; $(hex).value = v; paint(); };
+  $(picker).addEventListener('input', () => set($(picker).value));
+  $(hex).addEventListener('input', () => set($(hex).value.trim()));
+}
+syncColor('#c1', '#c1h', 'c1'); syncColor('#c2', '#c2h', 'c2'); syncColor('#cs', '#csh', 'cs');
+$('#ang').addEventListener('input', () => { bg.ang = +$('#ang').value; $('#angv').textContent = bg.ang + '°'; paint(); });
+$('#bgfile').addEventListener('change', (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { bg.img = r.result; paint(); }; r.readAsDataURL(f); });
+$('#dark').addEventListener('input', () => { bg.dark = +$('#dark').value; paint(); });
+
+/* ── 글자 효과 (선택 영역에 적용) ── */
+function exec(cmd, val) { card.focus(); document.execCommand(cmd, false, val); }
+$('#hl').addEventListener('click', () => exec('hiliteColor', $('#hlc').value));
+$('#ul').addEventListener('click', () => exec('underline'));
+$('#fc').addEventListener('input', () => exec('foreColor', $('#fc').value));
+$('#clear').addEventListener('click', () => exec('removeFormat'));
+$('#font').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; [...$('#font').children].forEach(x => x.classList.toggle('on', x === b)); card.style.fontFamily = b.dataset.f === 'serif' ? 'var(--serif)' : 'var(--sans)'; });
+$('#size').addEventListener('input', () => { card.style.fontSize = $('#size').value + 'px'; $('#sizev').textContent = $('#size').value; });
+
+/* ── 서명 ── */
+function applySig() {
+  let s = card.querySelector('.sig'); const v = $('#sig').value.trim();
+  if (!v) { if (s) s.remove(); return; }
+  if (!s) { s = document.createElement('span'); s.className = 'sig'; s.contentEditable = 'false'; card.appendChild(s); }
+  s.textContent = v;
+}
+$('#sig').addEventListener('input', applySig);
+paint();
+
+/* ── 내보내기 ── */
+$('#png').addEventListener('click', async () => {
+  const btn = $('#png'); btn.textContent = '만드는 중…'; btn.disabled = true;
+  try {
+    const canvas = await html2canvas(card, { scale: 2, backgroundColor: null, useCORS: true });
+    const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = `발췌_${Date.now()}.png`; a.click();
+  } catch (e) { alert('이미지 저장 실패: ' + e.message); }
+  btn.textContent = '이미지로 저장'; btn.disabled = false;
+});
+function plainText() { const c = card.cloneNode(true); const s = c.querySelector('.sig'); if (s) s.remove(); return c.innerText.trim(); }
+$('#copy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(plainText()); $('#copy').textContent = '복사됨 ✓'; setTimeout(() => $('#copy').textContent = '텍스트 복사', 1500); } catch { alert('복사 실패 — 길게 눌러 직접 복사해 주세요.'); } });
+$('#txt').addEventListener('click', () => { const url = URL.createObjectURL(new Blob(['\uFEFF' + plainText()], { type: 'text/plain;charset=utf-8' })); const a = document.createElement('a'); a.href = url; a.download = `발췌_${Date.now()}.txt`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000); });
+</script>
+</body>
+</html>
+
